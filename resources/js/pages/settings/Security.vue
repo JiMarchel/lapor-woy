@@ -6,13 +6,11 @@ import SecurityController from '@/actions/App/Http/Controllers/Settings/Security
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
-import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
+// import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 import { edit } from '@/routes/security';
-import { disable, enable } from '@/routes/two-factor';
 
 type Props = {
     canManageTwoFactor?: boolean;
@@ -37,10 +35,7 @@ defineOptions({
     },
 });
 
-const { hasSetupData, clearTwoFactorAuthData } = useTwoFactorAuth();
 const showSetupModal = ref<boolean>(false);
-
-onUnmounted(() => clearTwoFactorAuthData());
 </script>
 
 <template>
@@ -134,7 +129,7 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <div>
-                <Button v-if="hasSetupData" @click="showSetupModal = true">
+                <!-- <Button v-if="hasSetupData" @click="showSetupModal = true">
                     <ShieldCheck />Continue setup
                 </Button>
                 <Form
@@ -146,7 +141,7 @@ onUnmounted(() => clearTwoFactorAuthData());
                     <Button type="submit" :disabled="processing">
                         Enable 2FA
                     </Button>
-                </Form>
+                </Form> -->
             </div>
         </div>
 
@@ -158,7 +153,7 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <div class="relative inline">
-                <Form v-bind="disable.form()" #default="{ processing }">
+                <!-- <Form v-bind="disable.form()" #default="{ processing }">
                     <Button
                         variant="destructive"
                         type="submit"
@@ -166,7 +161,7 @@ onUnmounted(() => clearTwoFactorAuthData());
                     >
                         Disable 2FA
                     </Button>
-                </Form>
+                </Form> -->
             </div>
 
             <TwoFactorRecoveryCodes />
