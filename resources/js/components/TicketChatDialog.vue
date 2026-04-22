@@ -26,11 +26,16 @@ const isSubmitting = ref(false);
 const isLoading = ref(true);
 const isOpen = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
+const localUnreadCount = ref(props.ticket.unread_replies_count || 0);
+
+const pathName = window.location.pathname;
+const isInArsip = pathName.includes('/arsip');
 
 const page = usePage();
 const currentUserId = String(page.props.auth?.user?.id);
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+let unreadPollInterval: ReturnType<typeof setInterval> | null = null;
 
 const scrollToBottom = async () => {
     await nextTick();
@@ -45,7 +50,9 @@ const fetchReplies = async () => {
             ? (scrollContainer.value.scrollHeight - scrollContainer.value.scrollTop - scrollContainer.value.clientHeight < 150)
             : true;
 
-        const response = await axios.get(index.url(props.ticket.id));
+        const response = await axios.get(index.url(props.ticket.id), {
+            params: { mark_read: true }
+        });
         const previousLength = replies.value.length;
 
         replies.value = response.data;
@@ -69,7 +76,6 @@ const sendReply = async () => {
             content: newMessage.value.trim()
         });
 
-        // Append Optimistically
         replies.value.push(response.data);
         newMessage.value = '';
         scrollToBottom();
@@ -77,6 +83,7 @@ const sendReply = async () => {
         if (props.ticket.unread_replies_count) {
             props.ticket.unread_replies_count = 0;
         }
+        localUnreadCount.value = 0;
 
     } catch (error) {
         console.error('Failed to send reply', error);
@@ -85,28 +92,50 @@ const sendReply = async () => {
     }
 };
 
+const checkUnread = async () => {
+    try {
+        const response = await axios.get(index.url(props.ticket.id));
+        const allReplies: TicketReply[] = response.data;
+        localUnreadCount.value = allReplies.filter(
+            (r) => r.user_id !== currentUserId && !r.is_read
+        ).length;
+    } catch { /* silent */ }
+};
+
+const startUnreadPolling = () => {
+    if (unreadPollInterval) clearInterval(unreadPollInterval);
+    unreadPollInterval = setInterval(checkUnread, 10000);
+};
+
+startUnreadPolling();
+
 watch(isOpen, (newVal) => {
     if (newVal) {
         isLoading.value = true;
         fetchReplies();
+        localUnreadCount.value = 0;
 
         if (props.ticket.unread_replies_count) {
             props.ticket.unread_replies_count = 0;
         }
 
-        pollInterval = setInterval(() => {
-            fetchReplies();
-        }, 3000);
+        if (unreadPollInterval) {
+            clearInterval(unreadPollInterval);
+            unreadPollInterval = null;
+        }
+        pollInterval = setInterval(fetchReplies, 3000);
     } else {
         if (pollInterval) {
             clearInterval(pollInterval);
             pollInterval = null;
         }
+        startUnreadPolling();
     }
 });
 
 onUnmounted(() => {
     if (pollInterval) clearInterval(pollInterval);
+    if (unreadPollInterval) clearInterval(unreadPollInterval);
 });
 
 const formatTime = (dateStr: string) => {
@@ -121,7 +150,7 @@ const formatTime = (dateStr: string) => {
             <Button variant="outline" size="icon" class="relative group">
                 <MessageSquare class="w-4 h-4" />
                 <!-- Red Ping Dot for Unread Messages -->
-                <span v-if="ticket.unread_replies_count && ticket.unread_replies_count > 0"
+                <span v-if="localUnreadCount > 0"
                     class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center">
                     <span
                         class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -184,10 +213,10 @@ const formatTime = (dateStr: string) => {
                 <form @submit.prevent="sendReply" class="flex items-center gap-2">
                     <Input v-model="newMessage" placeholder="Ketik pesan..."
                         class="flex-1 rounded-full px-4 border-gray-200 dark:border-gray-700 focus-visible:ring-indigo-500"
-                        :disabled="isSubmitting" />
+                        :disabled="isSubmitting || isInArsip" />
                     <Button type="submit" size="icon"
                         class="rounded-full shrink-0 w-10 h-10 bg-indigo-600 hover:bg-indigo-700 text-white"
-                        :disabled="isSubmitting || !newMessage.trim()">
+                        :disabled="isSubmitting || !newMessage.trim() || isInArsip">
                         <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
                         <Send v-else class="w-4 h-4 ml-0.5" />
                     </Button>

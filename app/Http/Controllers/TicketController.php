@@ -22,6 +22,30 @@ class TicketController extends Controller
         return $uploadProcess['secure_url'];
     }
 
+    public function arsip(Request $request)
+    {
+        $user = auth()->user();
+
+        $ticketsQuery = $user->ticket();
+
+        $ticketsQuery->when($request->filled('search'), function ($query) use ($request) {
+            $search = strtolower($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
+            });
+        });
+
+        $ticketsQuery->when($request->filled('priority') && $request->priority !== '*', function ($query) use ($request) {
+            $query->where('priority', $request->priority)->where('status', 'resolved');
+        });
+
+        return Inertia::render('user/Arsip', [
+            'tickets' => $ticketsQuery->with('user:id,name')->where('status', 'resolved')->latest()->paginate(8),
+            'filters' => $request->only(['search', 'priority']),
+        ]);
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -35,7 +59,7 @@ class TicketController extends Controller
             $search = strtolower($request->search);
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
             });
         })->when($request->filled('status') && $request->status !== '*', function ($query) use ($request) {
             $query->where('status', $request->status);
@@ -45,10 +69,10 @@ class TicketController extends Controller
 
         $ticketsQuery->withCount(['ticketReply as unread_replies_count' => function ($query) use ($user) {
             $query->where('user_id', '!=', $user->id)
-                  ->where('is_read', false);
+                ->where('is_read', false);
         }]);
 
-        $tickets = $ticketsQuery->latest()->paginate(8)->withQueryString();
+        $tickets = $ticketsQuery->latest()->where('status', '!=', 'resolved')->paginate(8)->withQueryString();
 
         $renderData = [
             'tickets' => $tickets,

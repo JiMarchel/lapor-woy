@@ -15,11 +15,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware('role:user')->group(function () {
         Route::resource('tickets', TicketController::class)->only(['index', 'store', 'update']);
+        Route::get('tickets/arsip', [TicketController::class, 'arsip'])->name('tickets.arsip');
     });
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('admin/tickets', AdminController::class)->names('admin');
         Route::get('admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::get('admin/arsip', [AdminController::class, 'arsip'])->name('admin.arsip');
     });
 });
 

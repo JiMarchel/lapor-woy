@@ -10,6 +10,9 @@ export type Ticket = {
     user_id: string;
     image_url: string | null;
     unread_replies_count?: number;
+    user?: {
+        name: string;
+    };
 }
 
 export type TicketReply = {

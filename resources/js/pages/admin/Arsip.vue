@@ -3,7 +3,6 @@ import { Head, router } from '@inertiajs/vue3';
 import { index } from '@/routes/admin';
 import { dashboard } from '@/routes/admin';
 import TicketCard from '@/components/TicketCard.vue';
-import AdminStatusUpdate from '@/components/AdminStatusUpdate.vue';
 import TicketForm from '@/components/TicketForm.vue';
 import Filters from '@/components/Filters.vue';
 import { Ticket } from '@/types/ticket';
@@ -103,14 +102,7 @@ const handlePageChange = (page: number) => {
 
         <!-- Ticket Card Grid -->
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-            <TicketCard v-for="ticket in tickets.data" :key="ticket.id" :ticket="ticket" show-actions>
-                <template #actions="{ ticket: t }">
-                    <div class="flex items-center gap-2">
-                        <AdminStatusUpdate :ticket="t" />
-                        <TicketForm :ticket="t" />
-                    </div>
-                </template>
-            </TicketCard>
+            <TicketCard v-for="ticket in tickets.data" :key="ticket.id" :ticket="ticket" show-actions />
         </div>
 
         <!-- Pagination Section -->

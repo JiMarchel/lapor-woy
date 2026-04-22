@@ -13,10 +13,12 @@ class TicketReplyController extends Controller
      */
     public function index(Ticket $ticket, Request $request)
     {
-        $ticket->ticketReply()
-            ->where('user_id', '!=', $request->user()->id)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+        if ($request->boolean('mark_read')) {
+            $ticket->ticketReply()
+                ->where('user_id', '!=', $request->user()->id)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+        }
 
         $replies = $ticket->ticketReply()
             ->with(['user' => function($query) {

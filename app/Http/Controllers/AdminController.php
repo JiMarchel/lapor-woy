@@ -3,10 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AdminController extends Controller
 {
+    public function arsip(Request $request)
+    {
+        $ticketsQuery = Ticket::query();
+
+        $ticketsQuery->when($request->filled('search'), function ($query) use ($request) {
+            $search = strtolower($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
+            });
+        });
+
+        $ticketsQuery->when($request->filled('priority') && $request->priority !== '*', function ($query) use ($request) {
+            $query->where('priority', $request->priority)->where('status', 'resolved');
+        });
+
+        return Inertia::render('admin/Arsip', [
+            'tickets' => $ticketsQuery->with('user:id,name')->where('status', 'resolved')->latest()->paginate(8),
+            'filters' => $request->only(['search', 'priority']),
+        ]);
+    }
+
     public function dashboard()
     {
         $chartData = [];
@@ -40,8 +63,43 @@ class AdminController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('admin/Ticket');
+        $ticketsQuery = Ticket::query();
+
+        $ticketsQuery->when($request->filled('search'), function ($query) use ($request) {
+            $search = strtolower($request->search);
+            $query->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
+                ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
+        });
+
+        $ticketsQuery->when($request->filled('status') && $request->status !== '*', function ($query) use ($request) {
+            $query->where('status', $request->status);
+        });
+
+        $ticketsQuery->when($request->filled('priority') && $request->priority !== '*', function ($query) use ($request) {
+            $query->where('priority', $request->priority);
+        });
+
+        return Inertia::render('admin/Ticket', [
+            'tickets' => $ticketsQuery->with('user:id,name')->where('status', '!=', 'resolved')->latest()->paginate(8),
+            'filters' => $request->only(['search', 'status', 'priority']),
+        ]);
+    }
+
+    public function update(Request $request, Ticket $ticket)
+    {
+        $request->validate([
+            'status' => 'required|in:in_progress,resolved,rejected',
+        ]);
+
+        $ticket->update($request->only('status'));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Status laporan berhasil diperbarui',
+        ]);
+
+        return redirect()->back();
     }
 }

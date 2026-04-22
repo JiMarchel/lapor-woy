@@ -11,7 +11,7 @@ import {
     DialogClose
 } from '@/components/ui/dialog'
 import { store, update } from '@/routes/tickets';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import {
@@ -24,11 +24,17 @@ import {
 import { Textarea } from './ui/textarea';
 import { ref } from 'vue';
 import { Ticket } from '@/types/ticket';
-import { PenLine, Plus } from 'lucide-vue-next';
+import { Eye, PenLine, Plus } from 'lucide-vue-next';
 
 const props = defineProps<{
     ticket?: Ticket;
 }>()
+
+const page = usePage()
+const isAdmin = page.props.auth.user.role === 'admin'
+
+const pathName = window.location.pathname;
+const isInArsip = pathName.includes('/arsip');
 
 const form = useForm({
     title: props.ticket?.title || "",
@@ -54,8 +60,6 @@ const handleFileChange = (event: Event) => {
     }
 };
 
-
-
 </script>
 
 <template>
@@ -63,7 +67,7 @@ const handleFileChange = (event: Event) => {
         <DialogTrigger as-child>
             <Button :variant="ticket ? 'secondary' : 'default'" :size="ticket ? 'icon' : 'default'">
                 {{ ticket ? '' : 'Buat Laporan' }}
-                <PenLine v-if="ticket" class="h-4 w-4" />
+                <Eye v-if="ticket" class="h-4 w-4" />
                 <Plus v-else class="h-4 w-4" />
             </Button>
         </DialogTrigger>
@@ -83,23 +87,23 @@ const handleFileChange = (event: Event) => {
             })">
                 <div class="grid gap-2 py-2">
                     <Label for="title">Title</Label>
-                    <Input id="title" placeholder="Judul Laporan" type="text" v-model="form.title" />
+                    <Input id="title" placeholder="Judul Laporan" type="text" v-model="form.title" :disabled="isAdmin || isInArsip"/>
                     <div v-if="form.errors.title">{{ form.errors.title }}</div>
                 </div>
                 <div class="grid gap-2 py-2">
                     <Label for="description">Description</Label>
-                    <Textarea id="description" placeholder="Deskripsi Laporan" v-model="form.description" />
+                    <Textarea id="description" placeholder="Deskripsi Laporan" v-model="form.description" :disabled="isAdmin || isInArsip"/>
                     <div v-if="form.errors.description">{{ form.errors.description }}</div>
                 </div>
-                <div class="grid gap-2 py-2">
+                <div class="grid gap-2 py-2" :hidden="isAdmin">
                     <Label for="image_url">Gambar Pendukung</Label>
-                    <Input :key="fileInputKey" id="image_url" type="file" accept="image/*" @input="handleFileChange" />
+                    <Input :key="fileInputKey" id="image_url" type="file" accept="image/*" @input="handleFileChange" :disabled="isAdmin || isInArsip"/>
                     <div v-if="form.errors.image_url" class="text-sm text-red-500">{{ form.errors.image_url }}</div>
                 </div>
                 <div class="grid gap-2 py-2">
                     <Label for="priority">Priority</Label>
-                    <Select v-model="form.priority">
-                        <SelectTrigger class="w-full">
+                    <Select v-model="form.priority" :disabled="isAdmin || isInArsip">
+                        <SelectTrigger class="w-full" >
                             <SelectValue placeholder="Select a priority" />
                         </SelectTrigger>
                         <SelectContent>
@@ -124,7 +128,7 @@ const handleFileChange = (event: Event) => {
                     <DialogClose as-child>
                         <Button variant="destructive" :disabled="form.processing">Cancel</Button>
                     </DialogClose>
-                    <Button :disabled="form.processing">{{ form.processing ? 'Submitting...' : 'Submit' }}</Button>
+                    <Button :disabled="form.processing || isAdmin || isInArsip">{{ form.processing ? 'Submitting...' : 'Submit' }}</Button>
                 </DialogFooter>
             </form>
         </DialogContent>
