@@ -9,6 +9,8 @@ class TicketReply extends Model
 {
     use HasUuids;
 
+    protected $guarded = [];
+
     public function user(){
         return $this->belongsTo(User::class);
     }

@@ -2,7 +2,8 @@
 import { Head, router } from '@inertiajs/vue3';
 import { index } from '@/routes/tickets';
 import TicketForm from '@/components/TicketForm.vue';
-import SearchFilter from '@/components/SearchFilter.vue';
+import TicketChatDialog from '@/components/TicketChatDialog.vue';
+import Filters from '@/components/Filters.vue';
 import { Ticket } from '@/types/ticket';
 import { CheckCircle, Loader2, AlertCircle, Clock, ArrowUpCircle, Flame } from 'lucide-vue-next';
 import {
@@ -37,6 +38,8 @@ const props = defineProps<{
     },
     filters?: {
         search?: string
+        status?: string
+        priority?: string
     }
 }>();
 
@@ -92,7 +95,7 @@ const statusColor = (status: string) => {
             </div>
             
             <div class="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-3 mt-2 md:mt-0">
-                <SearchFilter :initialSearch="filters?.search" />
+                <Filters :initialFilters="filters" />
                 <TicketForm />
             </div>
         </div>
@@ -171,8 +174,10 @@ const statusColor = (status: string) => {
                                 formatDate(ticket.created_at) }}</span>
                         </div>
 
-                        <TicketForm :ticket="ticket" />
-
+                        <div class="flex items-center gap-2">
+                            <TicketChatDialog :ticket="ticket" />
+                            <TicketForm :ticket="ticket" />
+                        </div>
                     </div>
                 </div>
             </div>

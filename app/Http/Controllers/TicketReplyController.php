@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ticket;
 use App\Models\TicketReply;
 use Illuminate\Http\Request;
 
@@ -10,56 +11,42 @@ class TicketReplyController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Ticket $ticket, Request $request)
     {
-        //
-    }
+        $ticket->ticketReply()
+            ->where('user_id', '!=', $request->user()->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $replies = $ticket->ticketReply()
+            ->with(['user' => function($query) {
+                $query->select('id', 'name', 'role');
+            }])
+            ->oldest()
+            ->get();
+
+        return response()->json($replies);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Ticket $ticket, Request $request)
     {
-        //
-    }
+        $request->validate([
+            'content' => 'required|string|max:2000'
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(TicketReply $ticketReply)
-    {
-        //
-    }
+        $reply = $ticket->ticketReply()->create([
+            'user_id' => $request->user()->id,
+            'content' => $request->content,
+            'is_read' => false
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(TicketReply $ticketReply)
-    {
-        //
-    }
+        $reply->load(['user' => function($query) {
+            $query->select('id', 'name', 'role');
+        }]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, TicketReply $ticketReply)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(TicketReply $ticketReply)
-    {
-        //
+        return response()->json($reply);
     }
 }

@@ -61,8 +61,8 @@ const handleFileChange = (event: Event) => {
 <template>
     <Dialog>
         <DialogTrigger as-child>
-            <Button :variant="ticket ? 'secondary' : 'default'">
-                {{ ticket ? 'Edit' : 'Buat Laporan' }}
+            <Button :variant="ticket ? 'secondary' : 'default'" :size="ticket ? 'icon' : 'default'">
+                {{ ticket ? '' : 'Buat Laporan' }}
                 <PenLine v-if="ticket" class="h-4 w-4" />
                 <Plus v-else class="h-4 w-4" />
             </Button>

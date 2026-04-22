@@ -15,6 +15,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { index } from '@/routes/tickets';
+import { index as adminTicket, dashboard } from '@/routes/admin/';
 import type { NavItem } from '@/types';
 import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -32,10 +33,16 @@ const mainNavItems = computed<NavItem[]>(() => {
     ];
 
     if (user.value && user.value.role === 'admin') {
+        items.pop();
         items.unshift({
             title: 'Dashboard',
-            href: index(),
+            href: dashboard(),
             icon: LayoutGrid,
+        });
+        items.push({
+            title: 'Tickets',
+            href: adminTicket(),
+            icon: Ticket,
         });
     }
 

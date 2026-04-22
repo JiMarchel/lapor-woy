@@ -20,7 +20,6 @@ class TicketController extends Controller
         $uploadProcess = $cloudinary->uploadApi()->upload($filePath, ['folder' => 'ticket_laporan']);
 
         return $uploadProcess['secure_url'];
-
     }
 
     /**
@@ -30,28 +29,33 @@ class TicketController extends Controller
     {
         $user = auth()->user();
 
-        $ticketsQuery = $user->role === 'admin' ? Ticket::query() : $user->ticket();
+        $ticketsQuery = $user->ticket();
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $ticketsQuery->where(function($query) use ($search) {
-                $query->where('title', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+        $ticketsQuery->when($request->filled('search'), function ($query) use ($request) {
+            $search = strtolower($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
             });
-        }
+        })->when($request->filled('status') && $request->status !== '*', function ($query) use ($request) {
+            $query->where('status', $request->status);
+        })->when($request->filled('priority') && $request->priority !== '*', function ($query) use ($request) {
+            $query->where('priority', $request->priority);
+        });
+
+        $ticketsQuery->withCount(['ticketReply as unread_replies_count' => function ($query) use ($user) {
+            $query->where('user_id', '!=', $user->id)
+                  ->where('is_read', false);
+        }]);
 
         $tickets = $ticketsQuery->latest()->paginate(8)->withQueryString();
 
         $renderData = [
             'tickets' => $tickets,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'status', 'priority']),
         ];
 
-        if ($user->role === 'admin') {
-            return Inertia::render('admin/Dashboard', $renderData);
-        }
-
-        return Inertia::render('user/Dashboard', $renderData);
+        return Inertia::render('user/Ticket', $renderData);
     }
 
     /**
